@@ -331,20 +331,20 @@ export default function ProfilePage({ onReplaySplash, onNavigate }) {
       <section className="profile-section">
         <div className="section-head">
           <h2 className="section-title">
-            <Archive size={18} /> Archived Hardware (Soft Delete)
+            <Archive size={18} /> Hardware Archive
           </h2>
           <span className="count">
             {archivedGuns.length} archived item{archivedGuns.length !== 1 ? 's' : ''}
           </span>
         </div>
         <p className="section-desc">
-          Items soft-deleted from the main catalog. You can restore them to active stock or delete permanently.
+          Katalog terarsip (soft delete). Senjata dapat dipulihkan kembali ke stok aktif atau dihapus secara permanen.
         </p>
 
         {archivedGuns.length === 0 ? (
           <div className="empty-subbox">
             <Archive size={24} stroke="var(--steel)" />
-            <p>No archived hardware records. Click the archive icon on any catalog card to store it here.</p>
+            <p>Belum ada data hardware yang diarsipkan. Gunakan tombol arsip pada kartu katalog untuk menyimpannya di sini.</p>
           </div>
         ) : (
           <ul className="profile-item-list">
@@ -367,15 +367,15 @@ export default function ProfilePage({ onReplaySplash, onNavigate }) {
                       type="button"
                       className="btn btn--outline btn--sm"
                       onClick={() => handleRestore(g.id)}
-                      title="Pulihkan ke katalog"
+                      title="Pulihkan senjata ke katalog"
                     >
-                      <RotateCcw size={14} /> Pulihkan (Restore)
+                      <RotateCcw size={14} /> Pulihkan
                     </button>
                     <button
                       type="button"
                       className="btn btn--danger btn--sm"
                       onClick={() => setDeletePermanentTarget(g)}
-                      title="Hapus Permanen"
+                      title="Hapus permanen dari basis data"
                     >
                       <Trash2 size={14} /> Hapus Permanen
                     </button>
