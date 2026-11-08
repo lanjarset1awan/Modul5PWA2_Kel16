@@ -343,39 +343,40 @@ export default function GunDetail({ gun, onBack, onEdit, onDelete, onArchive }) 
               return (
                 <li key={rev.id} className="review-item">
                   <div className="review-head">
-                    <span className="review-user">{rev.user_identifier || 'Operator'}</span>
-                    
-                    {!isEditing && (
-                      <span className="review-stars-display">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <Star
-                            key={i}
-                            size={14}
-                            fill={i < rev.rating ? 'var(--brass)' : 'none'}
-                            stroke={i < rev.rating ? 'var(--brass)' : 'var(--line)'}
-                          />
-                        ))}
-                      </span>
-                    )}
+                    <div className="review-user-info">
+                      <span className="review-user">{rev.user_identifier || 'Operator'}</span>
+                      {!isEditing && (
+                        <span className="review-stars-display" aria-label={`${rev.rating} of 5 stars`}>
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Star
+                              key={i}
+                              size={14}
+                              fill={i < rev.rating ? 'var(--brass)' : 'none'}
+                              stroke={i < rev.rating ? 'var(--brass)' : 'var(--line)'}
+                            />
+                          ))}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Own review actions: Edit / Delete */}
                     {isOwnReview && !isEditing && (
                       <div className="review-own-actions">
                         <button
                           type="button"
-                          className="btn-rev-act"
+                          className="btn-rev-act btn-rev-act--edit"
                           onClick={() => handleStartEditReview(rev)}
                           title="Edit your review"
                         >
-                          <Edit2 size={13} /> Edit
+                          <Edit2 size={14} /> <span>Edit</span>
                         </button>
                         <button
                           type="button"
-                          className="btn-rev-act btn-rev-act--danger"
+                          className="btn-rev-act btn-rev-act--delete"
                           onClick={() => handleDeleteReviewItem(rev.id)}
                           title="Delete your review"
                         >
-                          <Trash2 size={13} /> Delete
+                          <Trash2 size={14} /> <span>Delete</span>
                         </button>
                       </div>
                     )}

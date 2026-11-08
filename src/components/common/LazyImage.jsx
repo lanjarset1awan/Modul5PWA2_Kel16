@@ -18,7 +18,9 @@ export default function LazyImage({
   className = '',
   width,
   height,
-  placeholder = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180"><rect width="240" height="180" fill="%23e2e8f0"/></svg>',
+  placeholder = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180"><rect width="240" height="180" fill="%23e4e8ea"/></svg>',
+  style = {},
+  containerStyle = {},
   ...rest
 }) {
   const [isVisible, setIsVisible] = useState(
@@ -40,7 +42,7 @@ export default function LazyImage({
         })
       },
       {
-        rootMargin: '50px 0px', // trigger slightly before entering viewport
+        rootMargin: '50px 0px',
         threshold: 0.01,
       },
     )
@@ -57,7 +59,14 @@ export default function LazyImage({
     <div
       ref={imgRef}
       className={`lazy-img-container ${isLoaded ? 'lazy-img--loaded' : 'lazy-img--loading'}`}
-      style={{ width: width ? `${width}px` : '100%', height: height ? `${height}px` : 'auto' }}
+      style={{
+        width: '100%',
+        height: height ? `${height}px` : '180px',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#e4e8ea',
+        ...containerStyle,
+      }}
     >
       <img
         src={isVisible ? src : placeholder}
@@ -70,6 +79,14 @@ export default function LazyImage({
           if (isVisible) setIsLoaded(true)
         }}
         className={`lazy-img ${className} ${isLoaded ? 'lazy-img--visible' : ''}`}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          display: 'block',
+          ...style,
+        }}
         {...rest}
       />
     </div>

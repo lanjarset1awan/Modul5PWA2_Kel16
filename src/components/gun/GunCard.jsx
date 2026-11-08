@@ -32,12 +32,11 @@ export default function GunCard({ gun, onSelect, onEdit, onDelete, onArchive, on
         onClick={() => onSelect(gun)}
         aria-label={`View ${gun.name}`}
       >
-        <div className="card-img-wrap" style={{ position: 'relative' }}>
+        <div className="card-img-wrap">
           <LazyImage
             className="card-img"
             src={imgSrc}
             alt={gun.name}
-            width={240}
             height={180}
           />
           {imageCount > 1 && (
