@@ -1,4 +1,5 @@
 import { apiClient, IS_SUPABASE } from '../config/api'
+import queryCache from '../utils/queryCache'
 
 // ---------------------------------------------------------------------------
 // Normalizer — standardizes product shape whether received from Supabase
@@ -38,6 +39,31 @@ export const normalizeProduct = (item) => {
       ? item.steps
       : ['Verify firearm is completely unloaded and point in safe direction.', 'Inspect receiver and mechanism for maintenance.']
 
+  // Resolve multi-image list from local persistence or item properties
+  let localMultiImages = []
+  if (item.id) {
+    try {
+      const stored = localStorage.getItem(`bore_barrel_gun_images_${item.id}`)
+      if (stored) localMultiImages = JSON.parse(stored)
+    } catch {
+      // ignore storage error
+    }
+  }
+
+  const primaryImage =
+    (Array.isArray(localMultiImages) && localMultiImages[0]) ||
+    item.image_url ||
+    item.image ||
+    (Array.isArray(item.images) && item.images[0]) ||
+    '/guns/pistol.svg'
+
+  const imagesList =
+    Array.isArray(localMultiImages) && localMultiImages.length > 0
+      ? localMultiImages
+      : Array.isArray(item.images) && item.images.length > 0
+      ? item.images
+      : [primaryImage]
+
   return {
     ...item,
     id: item.id,
@@ -47,8 +73,9 @@ export const normalizeProduct = (item) => {
     caliber: item.caliber || 'Standard',
     price: Number(item.price ?? item.cook_time ?? 0),
     description: item.description || '',
-    image_url: item.image_url || item.image || '/guns/pistol.svg',
-    image: item.image_url || item.image || '/guns/pistol.svg',
+    image_url: primaryImage,
+    image: primaryImage,
+    images: imagesList,
     ingredients: specsList,
     steps: stepsList,
   }
@@ -133,6 +160,8 @@ class GunService {
         ? data.specs
         : []
 
+      const primaryImg = (Array.isArray(data.images) && data.images[0]) || data.image_url || '/guns/pistol.svg'
+
       const payload = {
         name: data.name,
         type: data.type || (data.category === 'minuman' ? 'Rifle' : 'Pistol'),
@@ -140,16 +169,29 @@ class GunService {
         price: Number(data.price ?? data.cook_time ?? 0),
         description: data.description || '',
         specs: specsArray,
-        image_url: data.image_url || null,
+        image_url: primaryImg,
       }
 
       const res = await apiClient.post('/rest/v1/products', payload, {
         headers: { Prefer: 'return=representation' },
       })
       const created = Array.isArray(res) ? res[0] : res
+
+      // Save multi-image array locally linked to the created ID so it doesn't fail Supabase schema
+      if (created && created.id && Array.isArray(data.images) && data.images.length > 0) {
+        try {
+          localStorage.setItem(`bore_barrel_gun_images_${created.id}`, JSON.stringify(data.images))
+        } catch {
+          // ignore
+        }
+      }
+
+      queryCache.invalidate('guns')
       return { success: true, data: normalizeProduct(created) }
     }
-    return apiClient.post('/api/v1/recipes', data)
+    const result = await apiClient.post('/api/v1/recipes', data)
+    queryCache.invalidate('guns')
+    return result
   }
 
   /**
@@ -174,21 +216,37 @@ class GunService {
       }
       if (data.description !== undefined) payload.description = data.description
       if (specsArray !== undefined) payload.specs = specsArray
-      if (data.image_url !== undefined) payload.image_url = data.image_url
+      if (data.images !== undefined && Array.isArray(data.images) && data.images.length > 0) {
+        try {
+          localStorage.setItem(`bore_barrel_gun_images_${id}`, JSON.stringify(data.images))
+        } catch {
+          // ignore
+        }
+        payload.image_url = data.images[0]
+      } else if (data.image_url !== undefined) {
+        payload.image_url = data.image_url
+      }
 
       const res = await apiClient.patch(`/rest/v1/products?id=eq.${id}`, payload, {
         headers: { Prefer: 'return=representation' },
       })
       const updated = Array.isArray(res) ? res[0] : res
+      queryCache.invalidate('guns')
+      queryCache.invalidate('gun-detail')
       return { success: true, data: normalizeProduct(updated) }
     }
-    return apiClient.put(`/api/v1/recipes/${id}`, data)
+    const result = await apiClient.put(`/api/v1/recipes/${id}`, data)
+    queryCache.invalidate('guns')
+    queryCache.invalidate('gun-detail')
+    return result
   }
 
   /**
    * Partial update (PATCH).
    */
   async patchGun(id, data) {
+    queryCache.invalidate('guns')
+    queryCache.invalidate('gun-detail')
     if (IS_SUPABASE) {
       return this.updateGun(id, data)
     }
@@ -199,6 +257,13 @@ class GunService {
    * Delete product.
    */
   async deleteGun(id) {
+    queryCache.invalidate('guns')
+    queryCache.invalidate('gun-detail')
+    try {
+      localStorage.removeItem(`bore_barrel_gun_images_${id}`)
+    } catch {
+      // ignore
+    }
     if (IS_SUPABASE) {
       await apiClient.delete(`/rest/v1/products?id=eq.${id}`)
       return { success: true }

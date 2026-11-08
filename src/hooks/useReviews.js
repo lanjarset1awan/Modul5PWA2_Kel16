@@ -75,3 +75,53 @@ export function useCreateReview() {
 
   return { createReview, loading, error, success }
 }
+
+// ---------------------------------------------------------------------------
+// useUpdateReview — update an existing review.
+// ---------------------------------------------------------------------------
+
+export function useUpdateReview() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const updateReview = async (reviewId, reviewData) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await reviewService.updateReview(reviewId, reviewData)
+      return res.success ? res.data : null
+    } catch (err) {
+      setError(err.message || 'Failed to update review.')
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { updateReview, loading, error }
+}
+
+// ---------------------------------------------------------------------------
+// useDeleteReview — delete an existing review.
+// ---------------------------------------------------------------------------
+
+export function useDeleteReview() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const deleteReview = async (reviewId) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await reviewService.deleteReview(reviewId)
+      return res.success
+    } catch (err) {
+      setError(err.message || 'Failed to delete review.')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { deleteReview, loading, error }
+}

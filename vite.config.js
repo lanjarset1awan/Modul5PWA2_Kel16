@@ -25,6 +25,38 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        runtimeCaching: [
+          {
+            // Caches all image requests using CacheFirst strategy
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'product-images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Specifically cache gun images in /guns/
+            urlPattern: ({ url }) => url.pathname.startsWith('/guns/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-guns-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 24 * 60 * 60, // 60 Days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
     }),
   ],
