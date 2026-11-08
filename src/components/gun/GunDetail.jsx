@@ -235,14 +235,24 @@ export default function GunDetail({ gun, onBack, onEdit, onDelete, onArchive }) 
             )}
 
             {onEdit && (
-              <button type="button" className="btn btn--outline" onClick={() => onEdit(gun)}>
-                Edit
+              <button
+                type="button"
+                className="btn btn--outline btn-detail-edit"
+                onClick={() => onEdit(gun)}
+                title="Edit Hardware"
+              >
+                <Edit2 size={16} /> Edit
               </button>
             )}
 
             {onDelete && (
-              <button type="button" className="btn btn--danger" onClick={() => onDelete(gun)}>
-                Delete
+              <button
+                type="button"
+                className="btn btn--danger btn-detail-delete"
+                onClick={() => onDelete(gun)}
+                title="Delete Hardware"
+              >
+                <Trash2 size={16} /> Delete
               </button>
             )}
           </div>
