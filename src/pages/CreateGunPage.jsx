@@ -20,6 +20,35 @@ import {
 } from '../utils/draftStorage'
 import ConfirmModal from '../components/modals/ConfirmModal'
 
+function compressImageFile(file, maxWidth = 800, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      img.onerror = () => resolve(e.target.result)
+      img.src = e.target.result
+    }
+    reader.onerror = () => resolve('/guns/pistol.svg')
+    reader.readAsDataURL(file)
+  })
+}
+
 /**
  * CreateGunPage — Create a new weapon / hardware item with image upload,
  * draft persistence (auto-save), specs, and assembly steps.
@@ -118,30 +147,31 @@ export default function CreateGunPage({ onBack, onSuccess }) {
     setDraftTimestamp(null)
   }
 
-  // Handle multi-image file selection
-  const handleImagesChange = (e) => {
+  // Handle multi-image file selection with client-side compression
+  const handleImagesChange = async (e) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
     setError('')
 
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 
-    files.forEach((file) => {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('One or more files exceed the 5MB limit.')
-        return
+    for (const file of files) {
+      if (file.size > 8 * 1024 * 1024) {
+        setError('One or more files exceed the 8MB limit.')
+        continue
       }
       if (!allowed.includes(file.type)) {
         setError('Allowed formats: .jpg, .jpeg, .png, .webp')
-        return
+        continue
       }
 
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        setUploadedImages((prev) => [...prev, ev.target.result])
+      try {
+        const compressed = await compressImageFile(file, 800, 0.75)
+        setUploadedImages((prev) => [...prev, compressed])
+      } catch {
+        setError('Failed to process image file.')
       }
-      reader.readAsDataURL(file)
-    })
+    }
   }
 
   // Add stock preset vector to images

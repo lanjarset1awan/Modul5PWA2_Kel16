@@ -35,7 +35,12 @@ export default function GunDetail({ gun, onBack, onEdit, onDelete, onArchive }) 
       return gun.images
     }
     const single = gun.image_url || gun.image || '/guns/pistol.svg'
-    return [single]
+    const fallbackList = [
+      single,
+      single.includes('rifle') ? '/guns/pistol.svg' : '/guns/rifle.svg',
+      single.includes('shotgun') ? '/guns/pistol.svg' : '/guns/shotgun.svg',
+    ]
+    return Array.from(new Set(fallbackList))
   }, [gun])
 
   const [activeImageIndex, setActiveImageIndex] = useState(0)

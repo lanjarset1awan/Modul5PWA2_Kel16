@@ -6,6 +6,7 @@ const GUNS = [
     caliber: '9mm',
     price: 599,
     image: '/guns/pistol.svg',
+    images: ['/guns/pistol.svg', '/guns/rifle.svg', '/guns/shotgun.svg'],
     description:
       'The duty pistol everything else is measured against. Polymer frame, 17-round magazine, striker-fired trigger. Safe, boring, and it always goes bang.',
   },
@@ -16,6 +17,7 @@ const GUNS = [
     caliber: '7.62mm',
     price: 899,
     image: '/guns/rifle.svg',
+    images: ['/guns/rifle.svg', '/guns/pistol.svg', '/guns/shotgun.svg'],
     description:
       'Gas-operated, loose tolerances, and famously indifferent to mud. Seven decades of service and still the benchmark for a rifle that will not quit.',
   },
@@ -26,6 +28,7 @@ const GUNS = [
     caliber: '12 Gauge',
     price: 449,
     image: '/guns/shotgun.svg',
+    images: ['/guns/shotgun.svg', '/guns/rifle.svg', '/guns/pistol.svg'],
     description:
       'Pump-action workhorse. Five shells in the tube, a receiver that has taken more abuse than most trucks, and a sound that ends arguments.',
   },
@@ -36,6 +39,7 @@ const GUNS = [
     caliber: '5.56mm',
     price: 799,
     image: '/guns/rifle.svg',
+    images: ['/guns/rifle.svg', '/guns/shotgun.svg', '/guns/pistol.svg'],
     description:
       'Light-recoiling, endlessly modular, and accurate well past the range most shooters can hold. The platform you can rebuild with one tool.',
   },
@@ -46,6 +50,7 @@ const GUNS = [
     caliber: '.50 AE',
     price: 1599,
     image: '/guns/pistol.svg',
+    images: ['/guns/pistol.svg', '/guns/rifle.svg', '/guns/shotgun.svg'],
     description:
       'Gas-operated hand cannon. Three and a half pounds of chromed steel that fires a round most pistols would refuse. Subtle it is not.',
   },
@@ -56,6 +61,7 @@ const GUNS = [
     caliber: '12 Gauge',
     price: 399,
     image: '/guns/shotgun.svg',
+    images: ['/guns/shotgun.svg', '/guns/pistol.svg', '/guns/rifle.svg'],
     description:
       'The other pump gun. Twin action bars, a simple safety on the tang, and a price that leaves money for ammunition.',
   },
@@ -66,6 +72,7 @@ const GUNS = [
     caliber: '.45 ACP',
     price: 749,
     image: '/guns/pistol.svg',
+    images: ['/guns/pistol.svg', '/guns/shotgun.svg', '/guns/rifle.svg'],
     description:
       'Classic single-action, semi-automatic pistol. Over a century of military and law enforcement service with unmistakable stopping power.',
   },
@@ -76,6 +83,7 @@ const GUNS = [
     caliber: '9mm',
     price: 1299,
     image: '/guns/pistol.svg',
+    images: ['/guns/pistol.svg', '/guns/rifle.svg', '/guns/shotgun.svg'],
     description:
       'Roller-delayed blowback system delivering unrivaled smoothness and pointability. The global standard for tactical counter-terror operations.',
   },
@@ -86,6 +94,7 @@ const GUNS = [
     caliber: '.50 BMG',
     price: 2499,
     image: '/guns/rifle.svg',
+    images: ['/guns/rifle.svg', '/guns/shotgun.svg', '/guns/pistol.svg'],
     description:
       'Semi-automatic anti-materiel precision rifle. Designed to project heavy kinetic force over long distances through armor and barriers.',
   },
@@ -96,6 +105,7 @@ const GUNS = [
     caliber: '12 Gauge',
     price: 1199,
     image: '/guns/shotgun.svg',
+    images: ['/guns/shotgun.svg', '/guns/rifle.svg', '/guns/pistol.svg'],
     description:
       'Auto-regulating gas-operated dual piston combat shotgun. Military issue renowned for exceptional cycle speed and battle-hardened reliability.',
   },
@@ -106,6 +116,7 @@ const GUNS = [
     caliber: '9mm',
     price: 649,
     image: '/guns/pistol.svg',
+    images: ['/guns/pistol.svg', '/guns/rifle.svg', '/guns/shotgun.svg'],
     description:
       'Open-slide double/single action service sidearm. Renowned worldwide for flawless cycling, military durability, and match-grade accuracy.',
   },
@@ -116,6 +127,7 @@ const GUNS = [
     caliber: '7.62mm',
     price: 1899,
     image: '/guns/rifle.svg',
+    images: ['/guns/rifle.svg', '/guns/shotgun.svg', '/guns/pistol.svg'],
     description:
       'Short-stroke gas piston battle rifle engineered for special forces. Highly adaptable, ambidextrous, and tuned for extreme environmental endurance.',
   },

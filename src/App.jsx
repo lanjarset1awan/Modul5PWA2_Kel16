@@ -4,7 +4,7 @@ import Footer from './components/Footer.jsx'
 import PWABadge from './components/PWABadge.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import SplashScreen from './components/common/SplashScreen.jsx'
-import gunService from './services/gunService.js'
+import gunService, { normalizeProduct } from './services/gunService.js'
 import archiveService from './services/archiveService.js'
 import GUNS_LOCAL from './data/guns.js'
 import { Loader } from 'lucide-react'
@@ -54,7 +54,7 @@ function App() {
           (g) => (g.id && g.id === gunParam) || g.name.toLowerCase() === gunParam.toLowerCase()
         )
         if (localMatch) {
-          setSelectedGun(localMatch)
+          setSelectedGun(normalizeProduct(localMatch))
           setMode('detail')
           return
         }

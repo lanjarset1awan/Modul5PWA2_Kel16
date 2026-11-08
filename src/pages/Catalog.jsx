@@ -7,7 +7,7 @@ import GunDetail from '../components/gun/GunDetail'
 import AdvancedFilter from '../components/common/AdvancedFilter'
 import Pagination from '../components/common/Pagination'
 import ConfirmModal from '../components/modals/ConfirmModal'
-import gunService from '../services/gunService'
+import gunService, { normalizeProduct } from '../services/gunService'
 import queryCache from '../utils/queryCache'
 import archiveService from '../services/archiveService'
 import {
@@ -38,7 +38,7 @@ export default function Catalog({ onNavigate }) {
   // Decide data source
   const rawGuns = useMemo(() => {
     if (useLocal || (error && apiGuns.length === 0)) {
-      return GUNS_LOCAL.map((g, i) => ({ ...g, id: g.id || `local-${i}` }))
+      return GUNS_LOCAL.map((g, i) => normalizeProduct({ ...g, id: g.id || `local-${i}` }))
     }
     return apiGuns
   }, [apiGuns, error, useLocal])

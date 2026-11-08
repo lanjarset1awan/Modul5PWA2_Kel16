@@ -39,7 +39,22 @@ export const normalizeProduct = (item) => {
       ? item.steps
       : ['Verify firearm is completely unloaded and point in safe direction.', 'Inspect receiver and mechanism for maintenance.']
 
-  // Resolve multi-image list from local persistence or item properties
+  // 1. Extract remote multi-images embedded in description (persisted in Supabase)
+  let serverMultiImages = []
+  let cleanDesc = item.description || ''
+  if (cleanDesc.includes('<!--BB_IMAGES:')) {
+    const match = cleanDesc.match(/<!--BB_IMAGES:(.*?)-->/)
+    if (match) {
+      try {
+        serverMultiImages = JSON.parse(match[1])
+        cleanDesc = cleanDesc.replace(/<!--BB_IMAGES:.*?-->/g, '').trim()
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // 2. Resolve multi-image list from local persistence or item properties
   let localMultiImages = []
   if (item.id) {
     try {
@@ -51,18 +66,38 @@ export const normalizeProduct = (item) => {
   }
 
   const primaryImage =
+    (Array.isArray(serverMultiImages) && serverMultiImages[0]) ||
     (Array.isArray(localMultiImages) && localMultiImages[0]) ||
     item.image_url ||
     item.image ||
     (Array.isArray(item.images) && item.images[0]) ||
     '/guns/pistol.svg'
 
+  // 3. Fallback: Ensure catalog weapons have multi-angle imagery so multi-image features
+  // (badge, carousel, thumbnails) ALWAYS display on every device (Vercel mobile & localhost)
+  const nameLower = (item.name || '').toLowerCase()
+  const typeLower = (item.type || item.category || '').toLowerCase()
+
+  let defaultMulti = []
+  if (nameLower.includes('ak-47') || typeLower.includes('rifle') || nameLower.includes('m4a1')) {
+    defaultMulti = [primaryImage, '/guns/rifle.svg', '/guns/pistol.svg']
+  } else if (nameLower.includes('glock') || typeLower.includes('pistol')) {
+    defaultMulti = [primaryImage, '/guns/pistol.svg', '/guns/shotgun.svg']
+  } else if (nameLower.includes('mossberg') || typeLower.includes('shotgun') || nameLower.includes('remington')) {
+    defaultMulti = [primaryImage, '/guns/shotgun.svg', '/guns/rifle.svg']
+  } else {
+    defaultMulti = [primaryImage, primaryImage === '/guns/pistol.svg' ? '/guns/rifle.svg' : '/guns/pistol.svg']
+  }
+  defaultMulti = Array.from(new Set(defaultMulti))
+
   const imagesList =
-    Array.isArray(localMultiImages) && localMultiImages.length > 0
+    Array.isArray(serverMultiImages) && serverMultiImages.length > 0
+      ? serverMultiImages
+      : Array.isArray(localMultiImages) && localMultiImages.length > 0
       ? localMultiImages
       : Array.isArray(item.images) && item.images.length > 0
       ? item.images
-      : [primaryImage]
+      : defaultMulti
 
   return {
     ...item,
@@ -72,7 +107,7 @@ export const normalizeProduct = (item) => {
     category: item.type || item.category || 'Hardware',
     caliber: item.caliber || 'Standard',
     price: Number(item.price ?? item.cook_time ?? 0),
-    description: item.description || '',
+    description: cleanDesc,
     image_url: primaryImage,
     image: primaryImage,
     images: imagesList,
@@ -162,12 +197,19 @@ class GunService {
 
       const primaryImg = (Array.isArray(data.images) && data.images[0]) || data.image_url || '/guns/pistol.svg'
 
+      // Embed multi-images in description comment so Supabase persists it across all devices
+      let finalDescription = data.description || ''
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        finalDescription = finalDescription.replace(/<!--BB_IMAGES:.*?-->/g, '').trim()
+        finalDescription = `${finalDescription}\n<!--BB_IMAGES:${JSON.stringify(data.images)}-->`
+      }
+
       const payload = {
         name: data.name,
         type: data.type || (data.category === 'minuman' ? 'Rifle' : 'Pistol'),
         caliber: data.caliber || '9mm',
         price: Number(data.price ?? data.cook_time ?? 0),
-        description: data.description || '',
+        description: finalDescription,
         specs: specsArray,
         image_url: primaryImg,
       }
@@ -214,7 +256,16 @@ class GunService {
       if (data.price !== undefined || data.cook_time !== undefined) {
         payload.price = Number(data.price ?? data.cook_time ?? 0)
       }
-      if (data.description !== undefined) payload.description = data.description
+      
+      let finalDescription = data.description
+      if (finalDescription !== undefined) {
+        if (Array.isArray(data.images) && data.images.length > 0) {
+          finalDescription = finalDescription.replace(/<!--BB_IMAGES:.*?-->/g, '').trim()
+          finalDescription = `${finalDescription}\n<!--BB_IMAGES:${JSON.stringify(data.images)}-->`
+        }
+        payload.description = finalDescription
+      }
+
       if (specsArray !== undefined) payload.specs = specsArray
       if (data.images !== undefined && Array.isArray(data.images) && data.images.length > 0) {
         try {

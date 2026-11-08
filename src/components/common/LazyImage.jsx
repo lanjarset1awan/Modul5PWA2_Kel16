@@ -18,6 +18,7 @@ export default function LazyImage({
   className = '',
   width,
   height,
+  objectFit = 'contain',
   placeholder = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180"><rect width="240" height="180" fill="%23e4e8ea"/></svg>',
   style = {},
   containerStyle = {},
@@ -65,6 +66,9 @@ export default function LazyImage({
         position: 'relative',
         overflow: 'hidden',
         background: '#e4e8ea',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         ...containerStyle,
       }}
     >
@@ -82,7 +86,7 @@ export default function LazyImage({
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
+          objectFit,
           objectPosition: 'center',
           display: 'block',
           ...style,
