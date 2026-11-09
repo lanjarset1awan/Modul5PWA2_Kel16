@@ -65,28 +65,35 @@ export const normalizeProduct = (item) => {
     }
   }
 
+  const nameLower = (item.name || '').toLowerCase()
+  const typeLower = (item.type || item.category || '').toLowerCase()
+
+  const defaultTypeSvg =
+    nameLower.includes('ak-47') || typeLower.includes('rifle') || nameLower.includes('m4a1') || nameLower.includes('ar-15')
+      ? '/guns/rifle.svg'
+      : nameLower.includes('mossberg') || typeLower.includes('shotgun') || nameLower.includes('remington')
+      ? '/guns/shotgun.svg'
+      : '/guns/pistol.svg'
+
   const primaryImage =
     (Array.isArray(serverMultiImages) && serverMultiImages[0]) ||
     (Array.isArray(localMultiImages) && localMultiImages[0]) ||
     item.image_url ||
     item.image ||
     (Array.isArray(item.images) && item.images[0]) ||
-    '/guns/pistol.svg'
+    defaultTypeSvg
 
   // 3. Fallback: Ensure catalog weapons have multi-angle imagery so multi-image features
   // (badge, carousel, thumbnails) ALWAYS display on every device (Vercel mobile & localhost)
-  const nameLower = (item.name || '').toLowerCase()
-  const typeLower = (item.type || item.category || '').toLowerCase()
-
   let defaultMulti = []
-  if (nameLower.includes('ak-47') || typeLower.includes('rifle') || nameLower.includes('m4a1')) {
-    defaultMulti = [primaryImage, '/guns/rifle.svg', '/guns/pistol.svg']
+  if (nameLower.includes('ak-47') || typeLower.includes('rifle') || nameLower.includes('m4a1') || nameLower.includes('ar-15')) {
+    defaultMulti = [primaryImage, '/guns/rifle.svg', '/guns/shotgun.svg', '/guns/pistol.svg']
   } else if (nameLower.includes('glock') || typeLower.includes('pistol')) {
-    defaultMulti = [primaryImage, '/guns/pistol.svg', '/guns/shotgun.svg']
+    defaultMulti = [primaryImage, '/guns/pistol.svg', '/guns/rifle.svg', '/guns/shotgun.svg']
   } else if (nameLower.includes('mossberg') || typeLower.includes('shotgun') || nameLower.includes('remington')) {
-    defaultMulti = [primaryImage, '/guns/shotgun.svg', '/guns/rifle.svg']
+    defaultMulti = [primaryImage, '/guns/shotgun.svg', '/guns/rifle.svg', '/guns/pistol.svg']
   } else {
-    defaultMulti = [primaryImage, primaryImage === '/guns/pistol.svg' ? '/guns/rifle.svg' : '/guns/pistol.svg']
+    defaultMulti = [primaryImage, '/guns/rifle.svg', '/guns/shotgun.svg', '/guns/pistol.svg']
   }
   defaultMulti = Array.from(new Set(defaultMulti))
 

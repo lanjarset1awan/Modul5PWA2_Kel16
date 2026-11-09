@@ -82,8 +82,9 @@ export default function GunDetail({ gun, onBack, onEdit, onDelete, onArchive }) 
     return reviewService.getReactions(reviewId)
   }
 
-  const handleToggleReaction = (reviewId, type) => {
-    const updated = reviewService.toggleReaction(reviewId, type)
+  const handleToggleReaction = (review, type) => {
+    const updated = reviewService.toggleReaction(review, type)
+    const reviewId = typeof review === 'object' && review !== null ? review.id : review
     setReactionsMap((prev) => ({
       ...prev,
       [reviewId]: updated,
@@ -450,21 +451,21 @@ export default function GunDetail({ gun, onBack, onEdit, onDelete, onArchive }) 
                         <button
                           type="button"
                           className={`btn-reaction ${reactions.userReaction === 'like' ? 'btn-reaction--active' : ''}`}
-                          onClick={() => handleToggleReaction(rev.id, 'like')}
+                          onClick={() => handleToggleReaction(rev, 'like')}
                           title="Like review"
                         >
                           <ThumbsUp size={13} />
-                          <span>{reactions.likes > 0 ? reactions.likes : ''}</span>
+                          <span>{reactions.likes || 0}</span>
                         </button>
 
                         <button
                           type="button"
                           className={`btn-reaction ${reactions.userReaction === 'dislike' ? 'btn-reaction--active' : ''}`}
-                          onClick={() => handleToggleReaction(rev.id, 'dislike')}
+                          onClick={() => handleToggleReaction(rev, 'dislike')}
                           title="Dislike review"
                         >
                           <ThumbsDown size={13} />
-                          <span>{reactions.dislikes > 0 ? reactions.dislikes : ''}</span>
+                          <span>{reactions.dislikes || 0}</span>
                         </button>
                       </div>
                     </>

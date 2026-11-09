@@ -4,6 +4,7 @@ import { getUserIdentifier } from './userService.js'
 // ---------------------------------------------------------------------------
 // ReviewService — product reviews, ratings, edit/delete, & like/dislike.
 // Supports Supabase, REST API, and local storage fallback for offline robustness.
+// Syncs reaction metadata (likes, dislikes, user votes) seamlessly via Supabase.
 // ---------------------------------------------------------------------------
 
 const LOCAL_REVIEWS_KEY = 'bore_barrel_local_reviews'
@@ -40,6 +41,31 @@ class ReviewService {
   }
 
   /**
+   * Sync reaction metadata received from server into client storage
+   */
+  syncServerReactions(reviewId, serverMeta) {
+    try {
+      const raw = localStorage.getItem(REACTIONS_KEY)
+      const data = raw ? JSON.parse(raw) : {}
+      const existing = data[reviewId] || { likes: 0, dislikes: 0, userReactions: {} }
+      const serverUsers = serverMeta.users || {}
+      
+      const mergedUsers = { ...serverUsers, ...existing.userReactions }
+      const likes = typeof serverMeta.likes === 'number' ? serverMeta.likes : Object.values(mergedUsers).filter((v) => v === 'like').length
+      const dislikes = typeof serverMeta.dislikes === 'number' ? serverMeta.dislikes : Object.values(mergedUsers).filter((v) => v === 'dislike').length
+
+      data[reviewId] = {
+        likes,
+        dislikes,
+        userReactions: mergedUsers,
+      }
+      localStorage.setItem(REACTIONS_KEY, JSON.stringify(data))
+    } catch (e) {
+      console.warn('Failed syncing server reactions:', e)
+    }
+  }
+
+  /**
    * Fetch all reviews for a given product.
    */
   async getReviews(gunId) {
@@ -51,15 +77,36 @@ class ReviewService {
           `/rest/v1/reviews?product_id=eq.${gunId}&select=*&order=created_at.desc`,
         )
         const serverList = Array.isArray(data)
-          ? data.map((r) => ({
-              id: r.id,
-              product_id: r.product_id,
-              user_id: r.user_id,
-              user_identifier: r.user_id ? `Operator ${String(r.user_id).substring(0, 8)}` : 'Anonymous',
-              rating: r.rating,
-              comment: r.comment || '',
-              created_at: r.created_at,
-            }))
+          ? data.map((r) => {
+              let cleanComment = r.comment || ''
+              let serverMeta = null
+
+              if (cleanComment.includes('<!--BB_REACTIONS:')) {
+                const match = cleanComment.match(/<!--BB_REACTIONS:(.*?)-->/)
+                if (match) {
+                  try {
+                    serverMeta = JSON.parse(match[1])
+                    cleanComment = cleanComment.replace(/<!--BB_REACTIONS:.*?-->/g, '').trim()
+                  } catch {
+                    // ignore JSON parse error
+                  }
+                }
+              }
+
+              if (serverMeta) {
+                this.syncServerReactions(r.id, serverMeta)
+              }
+
+              return {
+                id: r.id,
+                product_id: r.product_id,
+                user_id: r.user_id,
+                user_identifier: r.user_id ? `Operator ${String(r.user_id).substring(0, 8)}` : 'Anonymous',
+                rating: r.rating,
+                comment: cleanComment,
+                created_at: r.created_at,
+              }
+            })
           : []
 
         // Merge server and local unique reviews
@@ -143,6 +190,26 @@ class ReviewService {
    * Edit an existing review (only if created by current user).
    */
   async updateReview(reviewId, reviewData) {
+    // Preserve any existing reaction metadata
+    let serverComment = reviewData.comment || ''
+    try {
+      const raw = localStorage.getItem(REACTIONS_KEY)
+      if (raw) {
+        const data = JSON.parse(raw)
+        const reactionsMeta = data[reviewId]
+        if (reactionsMeta) {
+          const metaStr = JSON.stringify({
+            likes: reactionsMeta.likes || 0,
+            dislikes: reactionsMeta.dislikes || 0,
+            users: reactionsMeta.userReactions || {},
+          })
+          serverComment = `${serverComment.replace(/<!--BB_REACTIONS:.*?-->/g, '').trim()}\n<!--BB_REACTIONS:${metaStr}-->`
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     // Update in localStorage
     try {
       const raw = localStorage.getItem(LOCAL_REVIEWS_KEY)
@@ -166,7 +233,7 @@ class ReviewService {
           `/rest/v1/reviews?id=eq.${reviewId}`,
           {
             rating: Number(reviewData.rating),
-            comment: reviewData.comment,
+            comment: serverComment,
           },
           { headers: { Prefer: 'return=representation' } },
         )
@@ -218,8 +285,8 @@ class ReviewService {
       const item = data[reviewId] || { likes: 0, dislikes: 0, userReactions: {} }
       const currentUserId = getUserIdentifier()
       return {
-        likes: item.likes || 0,
-        dislikes: item.dislikes || 0,
+        likes: item.likes ?? 0,
+        dislikes: item.dislikes ?? 0,
         userReaction: item.userReactions?.[currentUserId] || null, // 'like' | 'dislike' | null
       }
     } catch {
@@ -229,8 +296,15 @@ class ReviewService {
 
   /**
    * Toggle like or dislike for a review.
+   * Optimistically updates state and syncs to Supabase so other users/devices see updated counts.
+   *
+   * @param {string|number|Object} reviewOrId - review object or ID
+   * @param {'like'|'dislike'} reactionType
    */
-  toggleReaction(reviewId, reactionType) { // 'like' | 'dislike'
+  toggleReaction(reviewOrId, reactionType) {
+    const reviewId = typeof reviewOrId === 'object' && reviewOrId !== null ? reviewOrId.id : reviewOrId
+    const currentComment = typeof reviewOrId === 'object' && reviewOrId !== null ? reviewOrId.comment : ''
+
     try {
       const raw = localStorage.getItem(REACTIONS_KEY)
       const data = raw ? JSON.parse(raw) : {}
@@ -257,6 +331,23 @@ class ReviewService {
 
       data[reviewId] = item
       localStorage.setItem(REACTIONS_KEY, JSON.stringify(data))
+
+      // Sync reaction changes to Supabase so all users & devices observe the incremented count
+      if (IS_SUPABASE && !String(reviewId).startsWith('rev-')) {
+        const metaStr = JSON.stringify({
+          likes: item.likes,
+          dislikes: item.dislikes,
+          users: item.userReactions,
+        })
+        const cleanText = (currentComment || '').replace(/<!--BB_REACTIONS:.*?-->/g, '').trim()
+        const commentPayload = `${cleanText}\n<!--BB_REACTIONS:${metaStr}-->`
+
+        apiClient
+          .patch(`/rest/v1/reviews?id=eq.${reviewId}`, { comment: commentPayload })
+          .catch((err) => {
+            console.warn('Supabase reaction sync error:', err.message)
+          })
+      }
 
       return {
         likes: item.likes,
